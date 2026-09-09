@@ -1,0 +1,494 @@
+---
+title: "Predicting Wine Quality Using Physicochemical Properties"
+subtitle: "PSTAT 131 - Introduction to Statistical Machine Learning"
+author: "Ryan Fabrick"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    theme: cosmo
+    embed-resources: true
+jupyter: python3
+---
+
+# 1. Introduction
+
+### Background and Research Question
+
+I was fortunate enough to travel, study, and live in Paris, France for an entire semester (four months) during my third undergraduate year at UCSB. During this time, I was able to extensively explore the French and greater European wine culture. I was able to visit vineyards, wineries, wine shops, restaurants, and wine bars across France. My notable favorite locations being Paris and Bordeaux, both in France. As I learned, explored, and personally indulged in this culture, I became fascinated with the science and art of wine tasting. I was particularly intrigued by the process of wine certification and quality assessment, which is traditionally performed by human expert tasters. 
+
+Thus, wine certification and quality assessment are complex processes that traditionally rely on human expert tasters. However, human taste is inherently subjective. There is no disputing this. Human expert wine tasters have varying levels of experience, education, and personal background experience surrounding wine, its quality, and physiochemical properties. The primary objective of this project is to determine if I can accurately predict human assigned wine quality scores using only objective, physicochemical data. Rather than binning the wines into arbitrary categories (e.g. "good" vs. "bad"), this project and report utilizes a continuous regression framework to preserve the maximum amount of variance and information across the quality spectrum. 
+
+### The Data
+
+The data utilized in this report is a combined dataset of red and white variants of the Portuguese "Vinho Verde" wine. Combining both variants created a more robust dataset of 6,497 total observations. The dataset includes 12 physicochemical predictor variables such as fixed acidity, residual sugar, chlorides, and alcohol content and a single target variable, quality. This target variable is scored on a discrete scale from 0 to 10 by human experts.
+
+Per the project requirements, a codebook defining and identifying each variable in the final dataset is included in the folder of this project and/or accessible by clicking [here](codebook.html).
+
+I worked through the stages of the data science lifecycle including data cleaning, exploratory data analysis (EDA), preprocessing, modeling, and evaluation. My full thought process, comments, notes, analysis, and code while building this project are included in the folder of this project and/or accessible by clicking [Notebook 1](EDA_Notebook.html) and [Notebook 2](Preprocessing%26Modeling_Notebook.html).
+
+The dataset was originally collected and analyzed by Cortez et al. (2009) in their [paper](https://www.sciencedirect.com/science/article/pii/S0167923609001377?via%3Dihub) *"Modeling wine preferences by data mining from physicochemical properties,"* and is publically available on [Kaggle](https://www.kaggle.com/datasets/uciml/red-wine-quality-cortez-et-al-2009) and [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/186/wine+quality). Due to privacy and logistic constraints, only the physicochemical inputs and sensory outputs are available. There is no data regarding grape types, wine brand, or selling price.
+
+There are zero missing values across the entire dataset. It is important to note that the target variable is highly concentrated, with the vast majority of wines scoring a 5 or a 6. While this narrower range does not inhibit a regression approach, it provides important context for evaluating model performance at the extreme high and low ends of the quality scale which will be discussed, included, and analyzed throughout this report and its respective code and output.
+
+# 2. Exploratory Data Analysis (EDA)
+
+Before building any predictive models in any circumstance, it is essential to understand the underlying structure, distribution, and relationships within the dataset being used. This is exactly what I did.
+
+### Data Cleaning and Missing Values
+
+I imported and merged the two datasets into a single dataframe containing both the red and white wine variants. The critical first step in any machine learning pipeline is addressing missing or incomplete data, as this can severely skew model performance. I conducted a thorough check of the combined dataset which revealed that there is not a single missing value (0 nulls) across all 6,497 observations and 13 columns. Since the data is entirely complete, no imputation or dropping of rows was required.
+
+### Target Variable Distribution (Univariate Analysis)
+
+The ultimate goal of my project is to predict the quality score of the wines. First, I must look at how these scores are distributed across the dataset:`
+
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+# combined dataset (white wines and red wines datasets respectively)
+wine = pd.read_csv("winequality-combined.csv")
+
+# plot styling
+sns.set_theme(style="whitegrid")
+
+# 1. Univariate Plot: Distribution of Quality
+plt.figure(figsize=(8, 5))
+sns.countplot(data=wine, x='quality', hue='quality', palette='viridis', legend=False)
+plt.title('Distribution of Wine Quality Scores')
+plt.xlabel('Expert Quality Score')
+plt.ylabel('Count of Wines')
+plt.show()
+```
+
+The distribution of the target variable, quality, is highly concentrated and roughly normally distributed. It exhibits a massive class imbalance. The vast majority of the dataset consists of "average" wines scoring a 5 or a 6. There are very few excellent wines (scores of 8 and 9) and very few poor wines (scores of 3 and 4). As noted by Professor Coburn in my data memo feedback, this concentration is not inherently a problem for regression. But, it means the model will have significantly less training data to learn what makes a wine an extreme outlier. I expect the model to regress its predictions toward the mean of 5 and 6 throughout this project and report. To futher dive deeper into the distribution of quality, I visualized the distribution of quality scores by wine type (red vs. white):
+
+```{python}
+
+# 2. Distribution of Quality by Wine Type (Red vs. White)
+plt.figure(figsize=(10, 6))
+sns.countplot(data=wine, x='quality', hue='type', palette={'red': '#8b0000', 'white': '#f0e68c'})
+plt.title('Distribution of Wine Quality Scores by Wine Type')
+plt.xlabel('Expert Quality Score')
+plt.ylabel('Count of Wines')
+plt.legend(title='Wine Type')
+plt.show()
+```
+
+While the white wine samples significantly outnumber the red ones (~4,900 vs. ~1,600), the distribution of quality scores remains highly consistent across both categories. Both types are heavily clustered around ratings of 5 and 6 which supports the concept that the 'average' quality profile is a robust feature of the Portuguese Vinho Verde dataset rather than a byproduct of one specific wine type. This consistency justifies treating the combined dataset as a single, unified source for the regression model in this project and report.
+
+### Correlation Heatmap (Multivariate Analysis)
+
+To determine which physicochemical properties might be the best predictors of quality, I visualized the linear correlations between all numerical variables in the dataset:
+
+```{python}
+# 3. Multivariate Plot: Correlation Heatmap
+plt.figure(figsize=(10, 8))
+
+# Add numeric_only=True to skip the 'type' column that caused the crash
+correlation_matrix = wine.corr(numeric_only=True)
+
+# masking to hide the upper triangle for cleaner visual
+mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))
+
+sns.heatmap(correlation_matrix, mask=mask, annot=True, fmt=".2f", 
+            cmap='coolwarm', vmin=-1, vmax=1, square=True, linewidths=.5)
+plt.title('Correlation Heatmap of Physicochemical Properties')
+plt.show()
+```
+
+The correlation heatmap reveals several key relationships. First, alcohol has the strongest positive correlation with quality ($r = 0.44$) which suggests that wines with higher alcohol content generally receive higher scores. Conversely, volatile acidity has the strongest negative correlation with quality ($r = -0.27$) which aligns with domain knowledge (excessive volatile acidity causes a commonly undesirable vinegar taste). Additionally, there is strong collinearity between some predictor variables, such as density and alcohol ($r = -0.69$) which is chemically expected as alcohol is less dense than water.
+
+### Summary Statistics and Feature Scaling
+
+To futher explore the numerical landscape of the dataset, I generated a statistics table for all continuous predictors:
+
+```{python}
+summary_stats = wine.drop('type', axis=1).describe().T
+summary_stats
+```
+
+The measurements in this dataset operate on different numerical scales. Chlorides are measured in minute fractions (mean ~0.056) while total sulfur dioxide is measured in the hundreds (mean ~115.7, max 440). Additionally, several variables show maximum values that sit far above their 75th percentiles. Residual sugar goes from 8.1 at the 75th percentile up to an extreme max of 65.8. Free sulfur dioxide similarly jumps from 41 to 289. This table highlights why centering and scaling (standardization) is a mandatory preprocessing step needed for this dataset. Distance based algorithms (like K-Nearest Neighbors) and penalized regression models (like Elastic Net baseline) are sensitive to unscaled data. Without standardization, a model's penalty term might unfairly target variables measured in larger units (like total sulfur dioxide) simply because of their magnitude rather than their actual predictive power.
+
+### Key Predictors vs. Quality (Multivariate Analysis)
+
+Given that alcohol content showed the strongest correlation with the target variable, quality, it warrants a closer visual exploration. Looking at the two most significant predictors, alcohol content and volatile acidity, relate to wine quality, I examined their distributions across all quality scores (segmented by wine type). This helps me determine if the patterns are consistent across both red and white variants:
+
+```{python}
+fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+
+# 1: alcohol vs quality
+sns.boxplot(ax=axes[0], data=wine, x='quality', y='alcohol', hue='type', 
+            palette={'red': '#8b0000', 'white': '#f0e68c'})
+axes[0].set_title('Alcohol Content vs. Wine Quality')
+axes[0].set_xlabel('Quality Score')
+axes[0].set_ylabel('Alcohol (% vol)')
+
+# 2: volatile acidity vs quality
+sns.boxplot(ax=axes[1], data=wine, x='quality', y='volatile acidity', hue='type', 
+            palette={'red': '#8b0000', 'white': '#f0e68c'})
+axes[1].set_title('Volatile Acidity vs. Wine Quality')
+axes[1].set_xlabel('Quality Score')
+axes[1].set_ylabel('Volatile Acidity')
+
+plt.tight_layout()
+plt.show()
+```
+
+This boxplot clearly visualizes the positive trend identified in the heatmap. For wines scoring a 5 or higher, there is a distinct, upward trend in the median alcohol content as quality increases. The highest tier wines (scores of 8 and 9) consistently boast the highest alcohol percentages. Interestingly, the lowest quality wines (scores of 3 and 4) have slightly higher median alcohol contents than the 5s. This suggests that while high alcohol is a strong predictor of a great wine, it is not the only factor, and a poorly balanced wine cannot be saved by alcohol alone.
+
+The positive trend for alcohol and the negative trend for volatile acidity hold true across both red and white wine types. This confirms that these chemical properties are fundamental drivers of quality rather than artifacts of a specific wine variety. While the overall trends are identical, the boxplots reveal baseline differences. Red wines generally have higher volatile acidity levels across the board compared to whites. Visualizing this difference is important as it confirms that while the relationship to quality is similar, the magnitude of the predictors varies by type. This helps justify my earlier decision to keep both types in the single training dataset.
+
+### Feature Distribution Analysis
+
+To further understand the input space, I visualized the distributions of the 11 continuous physicochemical properties. This step is critical because many machine learning algorithms are sensitive to feature distribution and scale:
+
+```{python}
+# 5. Feature Distribution Analysis: Histograms
+cols = wine.select_dtypes(include=[np.number]).columns.drop('quality')
+wine[cols].hist(bins=30, figsize=(15, 12), color='skyblue', edgecolor='black')
+plt.suptitle('Histograms of Physicochemical Predictors', fontsize=16)
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+plt.show()
+```
+
+As seen above, variables such as residual sugar and chlorides show heavy right skewness with long and sparse tails, with the majority of observations concentrated near zero but a few extreme outliers stretching far out on the x-axis. Free sulfur dioxide and sulphates also display similar rightward skews. Conversely, pH and density show relatively symmetric, bell shaped distributions that closely approximate normality.
+
+The skewness in features like residual sugar and chlorides will negatively impact parametric linear models (like Elastic Net) since these models generally assume normally distributed errors and are highly sensitive to extreme outliers pulling the regression line. During preprocessing, I will explore applying transformations, specifically logarithmic transformations, to these skewed variables. This should compress the extreme tails, bring the distributions closer to normality, and improve the overall stability and performance of the baseline linear model.
+
+# 3. Data Splitting and Cross Validation
+
+### Data Splitting and Stratification
+
+To properly train and evaluate the predictive models, the combined wine dataset was split into two distinct sets: a training set and a testing set. I used an $80/20$ split, allocating 80% of the data ($N=5,197$) to train the models and holding out the remaining 20% ($N=1,300$) to evaluate their final performance. 
+
+Because the target variable is imbalanced, skewing strongly toward mid range scores of 5 and 6, a standard random split could have accidentally excluded the extreme values (like the rare 3s and 9s) from either the training or the testing set. To prevent this, I used a stratified sampling approach. Stratification ensures that the class distribution of the target variable in the training split proportionally mirrors the distribution in the testing split. 
+
+For a general audience, think of this like taking a representative survey. If 0.08% of the total population are excellent wines scoring a 9, stratification ensures exactly 0.08% of the training set and 0.08% of the testing set consists of those exact wines. This step is crucial for unbiased model evaluation. It ensures rarer quality scores are represented proportionately and prevents performance metrics from being artificially inflated or deflated by an unrepresentative sample. Before splitting, the categorical type column was also converted into a numeric dummy variable so it could be processed by the regression algorithms.
+
+```{python}
+# converting categorical 'type' column into a numeric dummy var
+df_encoded = pd.get_dummies(wine, columns=['type'], drop_first=True)
+
+# feature matrix (X) and target vector (y)
+X = df_encoded.drop('quality', axis=1)
+y = df_encoded['quality']
+
+# stratified 80/20 split
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, 
+    y, 
+    test_size=0.20, 
+    stratify=y, 
+    random_state=123
+)
+
+# verification for working stratification (commented out for rendering)
+# print("Training Set Quality Distribution (Proportions):")
+# print(y_train.value_counts(normalize=True).sort_index().round(4))
+
+# prettier table output for report
+dist = y_train.value_counts(normalize=True).sort_index().round(4)
+
+dist_df = dist.to_frame(name='Proportion')
+dist_df.index.name = 'Quality Score'
+
+display(dist_df.style.format({'Proportion': '{:.2%}'})
+        .set_properties(**{'text-align': 'center'})
+        .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center')]}]))
+```
+
+### Preprocessing and Cross Validation Strategy
+
+In machine learning, it is important to tune model settings without accidentally testing the model on the exact same data it learned from. To achieve this, I used a 10 fold Cross Validation (CV) strategy with shuffling on the training data. Cross validation works by dividing the training data into 10 equal parts (folds). The model trains on 9 of these folds and tests itself on the 1 remaining fold, rotating this process 10 times until every piece of data has been used for both training and validation. This gives a strong framework to estimate model generalization performance and helps prevent overfitting during hyperparameter tuning.
+
+My earlier Exploratory Data Analysis revealed and discussed specific distributional irregularities that required preprocessing. Certain predictors (residual sugar, chlorides, free sulfur dioxide, sulphates) were heavily right skewed. To pull in these extreme tails and approximate normality, I applied a logarithmic transformation (np.log1p). Additionally, I applied standard scaling to all continuous features. This is a necessary step because algorithms evaluate the "distance" or "penalty" between data points. Standard scaling ensures models like Elastic Net and K-Nearest Neighbors do not unfairly prioritize variables simply because they are measured on larger numerical scales.
+
+```{python}
+from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler, FunctionTransformer
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+
+# 10 fold cross validation on training data
+cv_folds = KFold(n_splits=10, shuffle=True, random_state=123)
+
+# isolates heavily skewed features I found during EDA
+skewed_features = ['residual sugar', 'chlorides', 'free sulfur dioxide', 'sulphates']
+
+# remaining features
+standard_features = [col for col in X_train.columns if col not in skewed_features]
+
+# np.log1p to handle transformations
+log_transformer = FunctionTransformer(np.log1p, validate=True)
+
+# preprocessor: log transform + scale the skewed ones, just scale the rest
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('log_and_scale', Pipeline([
+            ('log', log_transformer),
+            ('scaler', StandardScaler())
+        ]), skewed_features),
+        ('standard_scale', StandardScaler(), standard_features)
+    ],
+    remainder='passthrough'
+)
+```
+
+To prevent "data leakage" which is where information from the validation fold accidentally leaks into the training process, I bundled these preprocessing steps into a ColumnTransformer and built model Pipeline objects. This architecture guarantees that all transformations are computed solely on the training folds and then automatically applied to the validation folds within each cross validation iteration. This also helps with the reporducibility of my code, project, and overall report for others.
+
+# 4. Model Fitting
+
+### Model Pipeline Architecture
+
+To ensure a reproducible and clean workflow, I put each machine learning model into its own Pipeline object. This architecture guarantees that all preprocessing steps (lik logarithmic transformations and standard scaling) are automatically computed only on the training folds and applied to the validation folds within each cross validation iteration. This eliminates the risk of data leakage and allows for reproducibility of the entire project and report. 
+
+I selected four algorithims to establish baselines and capture varying levels of complexity which are:
+
+- Elastic Net: A regularized linear regression model combining Lasso and Ridge penalties. This makes it ideal for high dimensional data with correlated variables
+- K-Nearest Neighbors (KNN): A non parametric, distance based algorithm that provides a contrast to the linear baseline
+- Random Forest: An ensemble tree based method that provides a non linear baseline to capture interactions without strict linear assumptions
+- Gradient Boosting: An additive ensemble method that iteratively trains weak learners to minimize residual errors. This offers predictive flexibility for non linear relationships
+
+```{python}
+from sklearn.linear_model import ElasticNet
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+
+# pipeline 1: Elastic Net
+elastic_net_pipe = Pipeline([
+    ('preprocessor', preprocessor),
+    ('enet', ElasticNet(random_state=123, max_iter=10000))
+])
+
+# pipeline 2: K-Nearest Neighbors
+knn_pipe = Pipeline([
+    ('preprocessor', preprocessor),
+    ('knn', KNeighborsRegressor())
+])
+
+# pipeline 3: Random Forest
+rf_pipe = Pipeline([
+    ('preprocessor', preprocessor),
+    ('rf', RandomForestRegressor(random_state=123))
+])
+
+# pipeline 4: Gradient Boosting
+gb_pipe = Pipeline([
+    ('preprocessor', preprocessor),
+    ('gb', GradientBoostingRegressor(random_state=123))
+])
+```
+
+### Hyperparamter Tuning Strategy
+
+To find the optimal setup for each model, I established hyperparameter grids and utilized GridSearchCV paired with the 10 fold cross validation strategy. Each model was evaluated using Negative Mean Squared Error to determine the best fit.
+
+For Elastic Net, I tuned the overall regularization strength (alpha) and the balance between the Lasso and Ridge penalties (l1_ratio). For KNN, I tested various neighborhood sizes and distance weighting functions. For both ensemble methods (Random Forest and Gradient Boosting), I varied the number of trees, the maximum depth, and learning rates to manage the bias variance tradeoff and capture complex interactions.
+
+```{python}
+from sklearn.model_selection import GridSearchCV
+import warnings
+warnings.filterwarnings('ignore')
+
+# grids and searches
+# elastic net
+enet_grid = {'enet__alpha': [0.001, 0.01, 0.1, 1.0, 10.0], 
+             'enet__l1_ratio': [0.0, 0.2, 0.5, 0.8, 1.0]}
+enet_search = GridSearchCV(elastic_net_pipe, enet_grid, cv=cv_folds,
+                           scoring='neg_mean_squared_error', n_jobs=1)
+
+# k-nearest neighbors
+knn_grid = {'knn__n_neighbors': [3, 5, 7, 9, 11, 15, 21], 
+            'knn__weights': ['uniform', 'distance']}
+knn_search = GridSearchCV(knn_pipe, knn_grid, cv=cv_folds,
+                          scoring='neg_mean_squared_error', n_jobs=1)
+
+# random forest
+rf_grid = {'rf__n_estimators': [100, 200, 300], 
+           'rf__max_features': ['sqrt', 'log2', 1.0], 
+           'rf__max_depth': [None, 10, 20, 30]}
+rf_search = GridSearchCV(rf_pipe, rf_grid, cv=cv_folds,
+                         scoring='neg_mean_squared_error', n_jobs=1)
+
+# gradient boosting
+gb_grid = {'gb__n_estimators': [100, 200, 300],
+           'gb__learning_rate': [0.01, 0.1, 0.2],
+           'gb__max_depth': [3, 5, 7]}
+gb_search = GridSearchCV(gb_pipe, gb_grid, cv=cv_folds,
+                         scoring='neg_mean_squared_error', n_jobs=1)
+
+# fit models 
+enet_search.fit(X_train, y_train)
+knn_search.fit(X_train, y_train)
+rf_search.fit(X_train, y_train)
+gb_search.fit(X_train, y_train)
+```
+
+### Cross Validation Results & Interpretation
+
+The cross validation phase got clear distinctions between the linear baseline and the non linear algorithms. The table below summarizes the tuned hyperparamters and final perfromance metrics for all four models across cross validation:
+
+```{python}
+import pandas as pd
+
+# summary table for report
+summary_data = {
+    'Model': ['Elastic Net', 'KNN', 'Gradient Boosting', 'Random Forest'],
+    'Best Parameters': [
+        'alpha: 0.01,\nl1_ratio: 0.2',
+        'n_neighbors: 21,\nweights: distance',
+        'learning_rate: 0.1,\nmax_depth: 7,\nn_estimators: 300',
+        'max_depth: 30,\nmax_features: sqrt,\nn_estimators: 300'
+    ],
+    'CV RMSE': [0.7281, 0.6143, 0.6182, 0.6028],
+    'Test RMSE': ['N/A', '0.6168', 'N/A', '0.6048'],
+    'Test R²': ['N/A', '0.5017', 'N/A', '0.5209']
+}
+
+summary_df = pd.DataFrame(summary_data).set_index('Model')
+
+# left alignment to make it readable more
+display(summary_df.style.set_properties(**{'text-align': 'left', 'white-space': 'pre-wrap'})
+        .set_table_styles([{'selector': 'th', 'props': [('text-align', 'left')]}]))
+```
+
+The Elastic Net model achieved an Root Mean Squared Error (RMSE) of 0.7281 by relying heavily on the Ridge penalty (80%) to manage multicollinearity among the chemical properties. However, all three non linear models significantly outperformed the Elastic Net baseline. The Gradient Boosting model got a CV RMSE of 0.6182. The KNN model performed even better with a CV RMSE of 0.6143 which utilized 21 neighbors and distance weighting to capture local geographic patterns in the feature space.
+
+The strongest performer was the Random Forest model which achieved the lowest CV RMSE of 0.6028. Its success utilizing 300 deep trees confirms that the relationship between physicochemical properties and wine quality is complex and non linear. Thus, this required an ensemble approach to accurately map interactions that linear or distance based models missed. 
+
+### Model Selection and Final Performance
+
+Per the project requirements, only the top two performing models from the cross validation phase, Random Forest and K-Nearest Neighbors, are evaluated on the held out test dataset ($N=1,300$):
+
+```{python}
+from sklearn.metrics import mean_squared_error, r2_score
+
+# predictions from top 2 best estimators only
+knn_pred = knn_search.best_estimator_.predict(X_test)
+rf_pred = rf_search.best_estimator_.predict(X_test)
+
+# RMSE and R2 for each
+knn_test_rmse = np.sqrt(mean_squared_error(y_test, knn_pred))
+knn_test_r2 = r2_score(y_test, knn_pred)
+
+rf_test_rmse = np.sqrt(mean_squared_error(y_test, rf_pred))
+rf_test_r2 = r2_score(y_test, rf_pred)
+
+results = {
+    'Model': ['KNN', 'Random Forest'],
+    'Test RMSE': [round(knn_test_rmse, 4), round(rf_test_rmse, 4)],
+    'Test R²': [round(knn_test_r2, 4), round(rf_test_r2, 4)]
+}
+display(pd.DataFrame(results).set_index('Model'))
+```
+
+The Random Forest remained the strongest performer on unseen data. It achieved a Test RMSE of 0.6048 and an R² of 0.5209. This means the model explains approximately 52% of the variance in human assigned wine quality scores. Importantly, both models showed no meaningful jumps in error between their Cross Validation RMSE and Test RMSE. This confirms that generalization is stable, no overfitting occurred, and the pipeline successfully prevented data leakage. 
+
+### Feature Importance Analysis
+
+To understand what drives the Random Forest's predictions, I extracted the Mean Decrease in Impurity for all 12 features:
+
+```{python}
+# feature names post-preprocessing
+feature_names = skewed_features + standard_features
+
+# pulls feature importances from the best RF estimator
+rf_best = rf_search.best_estimator_
+importances = rf_best.named_steps['rf'].feature_importances_
+
+importance_df = pd.DataFrame({
+    'Feature': feature_names,
+    'Importance': importances
+}).sort_values('Importance', ascending=False).reset_index(drop=True)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(data=importance_df, x='Importance', y='Feature', color='#5f9ea0')
+plt.title('Random Forest Feature Importances')
+plt.xlabel('Mean Decrease in Impurity (Importance)')
+plt.ylabel('Feature')
+plt.tight_layout()
+plt.show()
+```
+
+Alcohol is definitively the most important feature by proving nearly 60% more influential than the next closest predictor. This confirms the visual trends found and note during my EDA where higher alcohol content correlated with higher scores. Volatile acidity and density tied for second. Interestingly, the wine type (red vs. white) provided negligible predictive power. This possibly suggests that once the underlying chemical properties are accounted for, the color of the wine is virtually irrelevant to predicting its quality.
+
+### Predicted vs. Actual Wine Quality (Random Forest)
+
+To visually evalurate the final model's performance, the scatter plot below compares the Random Forest’s predicted quality scores against the true quality scores on the held out test dataset. Points along the dashed red line represent perfect predictions:
+
+```{python}
+# predicted vs actual for random forest
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test, rf_pred, alpha=0.3, color='#5f9ea0', edgecolors='none', s=30)
+
+# perfect prediction reference line
+min_val = min(y_test.min(), rf_pred.min())
+max_val = max(y_test.max(), rf_pred.max())
+plt.plot([min_val, max_val], [min_val, max_val], color='#8b0000', linewidth=1.5,
+         linestyle='--', label='Perfect Prediction')
+
+plt.title('Random Forest: Predicted vs. Actual Wine Quality')
+plt.xlabel('Actual Quality Score')
+plt.ylabel('Predicted Quality Score')
+plt.legend()
+plt.tight_layout()
+plt.show()
+```
+
+This plot shows that the model performs best in the 5 and 6 range where the dense vertical clusters sit close to the perfect prediction line. This is expected given that the vast majority of training observations belong to these two scores as explored and noted in my EDA. 
+
+Also, the model shows a consistent regression toward the mean pattern at the extremes. For actual scores of 3 and 4, predictions are pulled upward toward 5. For actual scores of 8 and 9, predictions are pulled downward toward 6-7. Again, this directly reflects the class imbalance noted in my EDA as the model simply has far fewer examples of extreme wines to learn from.
+
+The lone actual score of 9 in the test set is predicted around a 7 which is the most visible single point miss in the plot. This again supports the analysis that this is a consequence of having only a handful of quality 9 wines in the entire dataset (0.08% of training observations).
+
+Lastly, the overall upward trend of the point clusters confirms the model has learned a meaningful signal. While it is not a perfect predictor, given the inherent subjectivity of human expert wine scoring and the R² of 0.521, these results are highly reasonable and expected.
+
+### Residual Diagnostics (Random Forest)
+
+To further visualize the model's accuracy and limitations, I calculated and plotted the residuals (Actual - Predicted) of the Random Forest predictions against the actual test data:
+
+```{python}
+residuals = y_test - rf_pred
+
+plt.figure(figsize=(10, 6))
+plt.scatter(rf_pred, residuals, alpha=0.3, color='#4682b4', edgecolors='none', s=30)
+plt.axhline(y=0, color='#8b0000', linewidth=1.5, linestyle='--', label='Zero Residual Line')
+plt.title('Random Forest: Residuals vs. Predicted Quality')
+plt.xlabel('Predicted Wine Quality')
+plt.ylabel('Residuals (Actual - Predicted)')
+plt.legend()
+plt.tight_layout()
+plt.show()
+```
+
+The distinct, parallel, downward sloping lines of points are a direct result of using a continuous regression model to predict discrete integer targets.
+
+This plot visually confirms the model’s boundary limitations stated previously. It simply systematically overpredicts poor quality wines (producing negative residuals on the left) and underpredicts high quality wines (producing positive residuals on the right). The densest cluster of points hugs the zero error reference line tightly between predicted values of 5.0 and 6.5. This confirms the model is reliable for average wines but struggles to capture the full variance of the rarer and more extreme outliers due to the massive class imbalance. Since this was noted and explained earler in the EDA of my project and report, this boundary behavior was expected.
+
+# 5. Conclusion
+
+### Model Outcomes and Performance
+The objective of this project was to predict wine quality based on chemical properties. Across the cross validation phase, the non linear models (Random Forest, K-Nearest Neighbors, and Gradient Boosting) consistently outperformed the linear baseline (Elastic Net). This confirms that the relationship between wine chemistry and perceived quality is complex and cannot be fully captured by simple linear decision boundaries.
+
+The Random Forest model was the strongest overall performer, ultimately achieving a test RMSE of 0.6048 and an R² of 0.5209. While an R² of 52% leaves a portion of the variance unexplained, this is a highly reasonable performance given the inherent subjectivity of human taste testing. Furthermore, the feature importance analysis of the Random Forest revealed that alcohol content and volatile acidity were the most influential drivers in determining a wine's final score which aligns perfectly with standard domain knowledge.
+
+### Limitations and Next Steps
+The primary limitation of this model is its difficulty accurately predicting rare outlier wines (scores of 3, 4, 8, and 9). As diagnosed in the residual analysis, the model systematically pulls extreme scores toward the mean of 5 and 6. This is a direct consequence of the dataset's heavy concentration in this middle range. 
+
+Future iterations of this project and research could explore targeted resampling techniques to artificially balance the extreme quality scores during training. Additionally, exploring specific interaction terms like the balance between acidity and residual sugar might yield an even deeper understanding of what chemical combinations result in top tier wine scores. Finally, while this project focused on a single dataset of Portuguese wines, future research could explore the generalizability of these models across different wine regions and grape varities.
+
+# 6. Works Cited
+
+Cortez, Paulo, et al. "Modeling Wine Preferences by Data Mining from Physicochemical Properties." Decision Support Systems, vol. 47, no. 4, 2009, pp. 547–553. https://doi.org/10.1016/j.dss.2009.05.016.
+
+Cortez, Paulo, et al. "Wine Quality Dataset." UCI Machine Learning Repository, 2009, https://archive.ics.uci.edu/dataset/186/wine+quality.
+
+Cortez, Paulo, et al. "Red Wine Quality." Kaggle, 2017, https://www.kaggle.com/datasets/uciml/red-wine-quality-cortez-et-al-2009.

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Dictionary: Wine Quality Dataset</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 950px;
+            margin: 0 auto;
+            padding: 30px;
+            background-color: #fcfcfc;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #eaeaea;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #5f9ea0;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.95em;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #f4f6f7;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        tr:hover {
+            background-color: #fdfdfd;
+        }
+        .role-feature {
+            color: #2980b9;
+            font-weight: 600;
+        }
+        .role-target {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        .role-other {
+            color: #8e44ad;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Codebook</h1>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Variable Name</th>
+                    <th>Role</th>
+                    <th>Data Type</th>
+                    <th>Description & Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>fixed_acidity</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>Based on physicochemical tests. Represents most acids involved with wine.</td>
+                </tr>
+                <tr>
+                    <td><code>volatile_acidity</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>The amount of acetic acid in wine. Very high of levels can lead to a commonly unpleasant, vinegar taste.</td>
+                </tr>
+                <tr>
+                    <td><code>citric_acid</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>Found in small quantities. Citric acid can add 'freshness' and flavor to wines.</td>
+                </tr>
+                <tr>
+                    <td><code>residual_sugar</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>The amount of sugar remaining after fermentation stops.</td>
+                </tr>
+                <tr>
+                    <td><code>chlorides</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>The amount of salt in the wine.</td>
+                </tr>
+                <tr>
+                    <td><code>free_sulfur_dioxide</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>The free form of SO2 exists in equilibrium between molecular SO2 (as a dissolved gas) and bisulfite ion.</td>
+                </tr>
+                <tr>
+                    <td><code>total_sulfur_dioxide</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>Amount of free and bound forms of S02.</td>
+                </tr>
+                <tr>
+                    <td><code>density</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>The density of water is close to that of water depending on the percent alcohol and sugar content.</td>
+                </tr>
+                <tr>
+                    <td><code>pH</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>Describes how acidic or basic a wine is on a scale from 0 (very acidic) to 14 (very basic).</td>
+                </tr>
+                <tr>
+                    <td><code>sulphates</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>A wine additive which can contribute to sulfur dioxide gas (S02) levels.</td>
+                </tr>
+                <tr>
+                    <td><code>alcohol</code></td>
+                    <td class="role-feature">Feature</td>
+                    <td>Continuous</td>
+                    <td>The percent alcohol content of the wine.</td>
+                </tr>
+                <tr>
+                    <td><code>quality</code></td>
+                    <td class="role-target">Target</td>
+                    <td>Integer</td>
+                    <td>Output variable based on sensory data. A discrete score given by human experts between 0 (very bad) and 10 (excellent).</td>
+                </tr>
+                <tr>
+                    <td><code>color / type</code></td>
+                    <td class="role-other">Categorical</td>
+                    <td>String</td>
+                    <td>Identifies the variant of the wine (Red or White).</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
