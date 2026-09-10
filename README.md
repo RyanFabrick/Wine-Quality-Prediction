@@ -36,7 +36,7 @@ I built this as a final exam for an upper-division course (PSTAT 131: Introducti
 
 ## Outline & Analysis
 
-For full code, statistical output, visualizations, and written interpretations, see the notebooks in [`Side Work/`](Side%20Work). For **rendered, readable versions,** see [Rendered Notebooks](#rendered-notebooks). The final, rendered version html file is [here](want to add the final written report html here). A brief outline is below:
+For full code, statistical output, visualizations, and written interpretations, see the notebooks in [`Side Work/`](Side%20Work). For **rendered, readable versions,** see [Rendered Notebooks](#rendered-notebooks). The final, rendered version html file is [here](https://htmlpreview.github.io/?https://github.com/RyanFabrick/Wine-Quality-Prediction/blob/main/Rendered%20Notebooks/Final%20Written%20Report.html). A brief outline is below:
 
 ### Part 1: Introduction & Research Question
 - Research question: can objective physicochemical properties predict inherently subject, human assigned wine quality scores?
@@ -73,11 +73,11 @@ For full code, statistical output, visualizations, and written interpretations, 
 
 ## Rendered Notebooks
 
-For full rendered HTML versions with all code, output, and visualizations, see [`Rendered Notebooks/`](Rendered%20Notebooks):
-- [EDA Notebook](Rendered%20Notebooks/EDA_Notebook.html)
-- [Preprocessing & Modeling Notebook](Rendered%20Notebooks/Preprocessing%26Modeling_Notebook.html)
-- [Final Written Report](Rendered%20Notebooks/Final%20Written%20Report.html)
-- [Codebook](Rendered%20Notebooks/codebook.html)
+For full rendered HTML versions with all code, output, and visualizations, click below (opens via [htmlpreview.github.io](https://htmlpreview.github.io/) since GitHub doesn't render raw HTML files directly):
+- [EDA Notebook](https://htmlpreview.github.io/?https://github.com/RyanFabrick/Wine-Quality-Prediction/blob/main/Rendered%20Notebooks/EDA_Notebook.html)
+- [Preprocessing & Modeling Notebook](https://htmlpreview.github.io/?https://github.com/RyanFabrick/Wine-Quality-Prediction/blob/main/Rendered%20Notebooks/Preprocessing%26Modeling_Notebook.html)
+- [Final Written Report](https://htmlpreview.github.io/?https://github.com/RyanFabrick/Wine-Quality-Prediction/blob/main/Rendered%20Notebooks/Final%20Written%20Report.html)
+- [Codebook](https://htmlpreview.github.io/?https://github.com/RyanFabrick/Wine-Quality-Prediction/blob/main/Rendered%20Notebooks/codebook.html)
 
 ## Dependencies
 
@@ -115,4 +115,4 @@ from sklearn.compose import ColumnTransformer
 ________________________________________________
 Built with ❤️ for UCSB
 
-This project demonstrates my interest in machine learning, applied data science, and predictive modeling. It was completed for a final exam for an undergraduate upper division course in Statistical Machine Learning (PSTAT 131) where I recieved an A letter grade. 
+This project demonstrates my interest in machine learning, applied data science, and predictive modeling. It was completed for a final exam for an undergraduate upper division course in Statistical Machine Learning (PSTAT 131) where I recieved an A letter grade.
