@@ -1,6 +1,6 @@
 # Wine Quality Prediction
 
-This is a machine learning project predicting wine quality scores from objective physicochemical properties of red and white wines. The project uses a continuous regression framework across four models (Elastic Net, K-Nearest Neighbors, Random Forest, and Gradient Boosting) with 10-fold cross-validated hyperparameter tuning. It covers data cleaning, exploratory data analysis, preprocessing pipelines, model comparison, and feature importance analysis.
+This is a machine learning project predicting wine quality scores from objective physicochemical properties of red and white wines. The project uses a continuous regression framework across four models (Elastic Net, K-Nearest Neighbors, Random Forest, and Gradient Boosting) with 10-fold cross-validated hyperparameter tuning. It covers data cleaning, exploratory data analysis, preprocessing pipelines, model comparison, and feature importance analysis. All datasets, sidework, notebook, and fully presentable, [rendered final report](https://htmlpreview.github.io/?https://github.com/RyanFabrick/Wine-Quality-Prediction/blob/main/Rendered%20Notebooks/Final%20Written%20Report.html) were graded
 
 ## Table of Contents
 
@@ -36,7 +36,7 @@ I built this as a final exam for an upper-division course (PSTAT 131: Introducti
 
 ## Outline & Analysis
 
-For full code, statistical output, visualizations, and written interpretations, see the notebooks in [`Side Work/`](Side%20Work). For **rendered, readable versions,** see [Rendered Notebooks](#rendered-notebooks). The final, rendered version html file is [here](https://htmlpreview.github.io/?https://github.com/RyanFabrick/Wine-Quality-Prediction/blob/main/Rendered%20Notebooks/Final%20Written%20Report.html). A brief outline is below:
+For full code, statistical output, visualizations, and written interpretations, see the notebooks in [`Side Work folder`](Side%20Work). For **rendered, readable versions,** see [Rendered Notebooks](#rendered-notebooks). The final, rendered version html file is [here](https://htmlpreview.github.io/?https://github.com/RyanFabrick/Wine-Quality-Prediction/blob/main/Rendered%20Notebooks/Final%20Written%20Report.html). A brief outline is below:
 
 ### Part 1: Introduction & Research Question
 - Research question: can objective physicochemical properties predict inherently subject, human assigned wine quality scores?
